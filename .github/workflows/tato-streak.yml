@@ -1,0 +1,55 @@
+name: Actualizador del Streak de Tato
+
+on:
+  schedule:
+    # Se ejecuta automáticamente todos los días a la medianoche (UTC)
+    - cron: '0 0 * * *'
+  workflow_dispatch: # Te permite ejecutarlo manualmente cuando quieras probarlo
+
+jobs:
+  update-streak:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Actualizar archivo JSON
+        run: |
+          python -c "
+          import json
+          from datetime import datetime, timedelta
+
+          file_path = 'tato-streak.json'
+          
+          # Intentar leer el archivo actual, si no existe o está vacío, iniciar valores
+          try:
+              with open(file_path, 'r') as f:
+                  data = json.load(f)
+          except Exception:
+              data = {'current_streak': 0, 'highest_streak': 0, 'last_updated': ''}
+
+          # Simulación lógica del streak diario (puedes adaptarla según tus necesidades de actualización)
+          today_str = datetime.utcnow().strftime('%Y-%m-%d')
+          
+          # Aquí incrementamos el streak base de ejemplo
+          data['current_streak'] += 1
+          if data['current_streak'] > data['highest_streak']:
+              data['highest_streak'] = data['current_streak']
+          
+          data['last_updated'] = today_str
+
+          with open(file_path, 'w') as f:
+              json.dump(data, f, indent=2)
+          "
+
+      - name: Confirmar y subir cambios
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add tato-streak.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m '🤖 Automatización: Actualización del streak de Tato' && git push)
